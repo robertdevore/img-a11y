@@ -36,22 +36,17 @@ define( 'IMG_A11Y_VERSION', '1.0.0' );
  * @param int $post_id The ID of the post being saved.
  */
 function img_a11y_block_save_if_missing_alt_classic( $post_id ) {
-    // Avoid autosaves, revisions, and saves by unauthorized users
     if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
     if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) return;
     if ( ! current_user_can( 'edit_post', $post_id ) ) return;
 
-    // Get post content
     $content = get_post_field( 'post_content', $post_id );
 
-    // Check if images lack alt tags
     if ( img_a11y_has_images_without_alt( $content ) ) {
-        // Set an error flag for the admin notice and stop the save process
         add_filter( 'redirect_post_location', function( $location ) {
             return add_query_arg( 'img_a11y_error', 'missing_alt', $location );
         });
 
-        // Set the post to draft to prevent publishing
         remove_action( 'save_post', 'img_a11y_block_save_if_missing_alt_classic' );
         wp_update_post( [
             'ID'           => $post_id,
@@ -70,7 +65,6 @@ add_action( 'save_post', 'img_a11y_block_save_if_missing_alt_classic', 10 );
  */
 function img_a11y_block_save_if_missing_alt_gutenberg( $prepared_post, $request ) {
     if ( isset( $prepared_post->post_content ) && img_a11y_has_images_without_alt( $prepared_post->post_content ) ) {
-        // Block save with an error message
         return new WP_Error(
             'missing_alt_tags',
             __( 'Save failed: Please ensure all images in the content have alt tags for accessibility.', 'img-a11y' ),
@@ -96,7 +90,7 @@ function img_a11y_has_images_without_alt( $content ) {
 
     foreach ( $images as $img ) {
         if ( ! $img->hasAttribute( 'alt' ) || trim( $img->getAttribute( 'alt' ) ) === '' ) {
-            return true; // Found an image without an alt attribute
+            return true;
         }
     }
     return false;
@@ -107,6 +101,37 @@ add_action( 'admin_notices', function() {
     if ( isset( $_GET['img_a11y_error'] ) && $_GET['img_a11y_error'] === 'missing_alt' ) {
         echo '<div class="notice notice-error"><p>';
         _e( 'Save failed: Please ensure all images in the post content have alt tags or are marked as decorative for accessibility.', 'img-a11y' );
+        echo '</p></div>';
+    }
+});
+
+/**
+ * Block saving on Edit Media screen if alt tag is missing.
+ *
+ * @param array $post The attachment post data.
+ * @param array $attachment The attachment fields from the request.
+ * @return array Modified attachment data if Alt tag is present, redirects if missing.
+ */
+function img_a11y_block_media_save_if_missing_alt( $post, $attachment ) {
+    if ( 'image' === substr( get_post_mime_type( $post['ID'] ), 0, 5 ) && empty( $attachment['post_excerpt'] ) ) {
+        // Redirect back with error if Alt is missing
+        wp_redirect( add_query_arg( [
+            'post'  => $post['ID'],
+            'action'=> 'edit',
+            'img_a11y_media_error' => 'missing_alt'
+        ], admin_url( 'post.php' ) ) );
+        exit; // Stop the script
+    }
+
+    return $post;
+}
+add_filter( 'attachment_fields_to_save', 'img_a11y_block_media_save_if_missing_alt', 10, 2 );
+
+// Display admin notice on Edit Media screen if alt tag is missing.
+add_action( 'admin_notices', function() {
+    if ( isset( $_GET['img_a11y_media_error'] ) && $_GET['img_a11y_media_error'] === 'missing_alt' ) {
+        echo '<div class="notice notice-error"><p>';
+        _e( 'Save failed: Please provide an Alt tag for accessibility.', 'img-a11y' );
         echo '</p></div>';
     }
 });
