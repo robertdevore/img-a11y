@@ -83,6 +83,11 @@ add_filter( 'rest_pre_insert_post', 'img_a11y_block_save_if_missing_alt_gutenber
  * @return bool True if there are images without alt tags, false otherwise.
  */
 function img_a11y_has_images_without_alt( $content ) {
+    // Return false immediately if content is empty
+    if ( empty( trim( $content ) ) ) {
+        return false;
+    }
+
     $dom = new DOMDocument();
     @$dom->loadHTML( $content );
 
