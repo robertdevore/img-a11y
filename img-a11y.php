@@ -106,32 +106,96 @@ add_action( 'admin_notices', function() {
 });
 
 /**
- * Block saving on Edit Media screen if alt tag is missing.
+ * Add "Decorative" checkbox to the Edit Media screen.
+ *
+ * @param array $form_fields Existing attachment fields.
+ * @param WP_Post $post The attachment post.
+ * @return array Modified attachment fields.
+ */
+function img_a11y_add_decorative_field_to_media( $form_fields, $post ) {
+    $decorative = get_post_meta( $post->ID, '_is_decorative', true );
+    $form_fields['is_decorative'] = [
+        'label' => __( 'Mark as Decorative', 'img-a11y' ),
+        'input' => 'html',
+        'html'  => '<input type="checkbox" name="attachments[' . $post->ID . '][is_decorative]" value="1" ' . checked( $decorative, 1, false ) . ' />',
+        'helps' => __( 'Check if this image is decorative and does not require alt text.', 'img-a11y' ),
+    ];
+
+    return $form_fields;
+}
+add_filter( 'attachment_fields_to_edit', 'img_a11y_add_decorative_field_to_media', 10, 2 );
+
+/**
+ * Save "Decorative" field from the Edit Media screen.
  *
  * @param array $post The attachment post data.
  * @param array $attachment The attachment fields from the request.
- * @return array Modified attachment data if Alt tag is present, redirects if missing.
+ * @return array The modified attachment data.
+ */
+function img_a11y_save_decorative_field_from_media( $post, $attachment ) {
+    if ( isset( $attachment['is_decorative'] ) ) {
+        update_post_meta( $post['ID'], '_is_decorative', 1 );
+    } else {
+        delete_post_meta( $post['ID'], '_is_decorative' );
+    }
+
+    return $post;
+}
+add_filter( 'attachment_fields_to_save', 'img_a11y_save_decorative_field_from_media', 10, 2 );
+
+/**
+ * Block saving on Edit Media screen if alt text is missing and "Decorative" is not checked.
+ *
+ * @param array $post The attachment post data.
+ * @param array $attachment The attachment fields from the request.
+ * @return array Modified attachment data if Alt text is present, redirects if missing and not decorative.
  */
 function img_a11y_block_media_save_if_missing_alt( $post, $attachment ) {
-    if ( 'image' === substr( get_post_mime_type( $post['ID'] ), 0, 5 ) && empty( $attachment['post_excerpt'] ) ) {
-        // Redirect back with error if Alt is missing
-        wp_redirect( add_query_arg( [
-            'post'  => $post['ID'],
-            'action'=> 'edit',
-            'img_a11y_media_error' => 'missing_alt'
-        ], admin_url( 'post.php' ) ) );
-        exit; // Stop the script
+    // Check if this is an image attachment
+    if ( 'image' === substr( get_post_mime_type( $post['ID'] ), 0, 5 ) ) {
+        // Retrieve 'Decorative' meta value
+        $is_decorative = ! empty( get_post_meta( $post['ID'], '_is_decorative', true ) );
+
+        // Redirect with error if Alt is missing and image is not decorative
+        if ( ! $is_decorative && empty( $attachment['post_excerpt'] ) ) { // Alt text is stored in 'post_excerpt'
+            wp_redirect( add_query_arg( [
+                'post'  => $post['ID'],
+                'action'=> 'edit',
+                'img_a11y_media_error' => 'missing_alt'
+            ], admin_url( 'post.php' ) ) );
+            exit; // Stop the script
+        }
     }
 
     return $post;
 }
 add_filter( 'attachment_fields_to_save', 'img_a11y_block_media_save_if_missing_alt', 10, 2 );
 
-// Display admin notice on Edit Media screen if alt tag is missing.
+// Display admin notice on Edit Media screen if alt text is missing and "Decorative" is unchecked.
 add_action( 'admin_notices', function() {
     if ( isset( $_GET['img_a11y_media_error'] ) && $_GET['img_a11y_media_error'] === 'missing_alt' ) {
         echo '<div class="notice notice-error"><p>';
-        _e( 'Save failed: Please provide an Alt tag for accessibility.', 'img-a11y' );
+        _e( 'Save failed: Please provide an Alt tag for accessibility or mark the image as decorative.', 'img-a11y' );
         echo '</p></div>';
     }
 });
+
+/**
+ * Enqueue JavaScript for adding the "Decorative" field in the media modal.
+ */
+function img_a11y_enqueue_media_modal_script() {
+    wp_enqueue_script(
+        'img-a11y-media-modal',
+        plugin_dir_url( __FILE__ ) . 'js/img-a11y-media-modal.js',
+        [ 'jquery' ],
+        IMG_A11Y_VERSION,
+        true
+    );
+
+    // Localize strings and data for JavaScript
+    wp_localize_script( 'img-a11y-media-modal', 'imgA11yData', [
+        'decorativeLabel' => __( 'Mark as Decorative', 'img-a11y' ),
+        'decorativeHelp'  => __( 'Check if this image is decorative and does not require alt text.', 'img-a11y' ),
+    ] );
+}
+add_action( 'admin_enqueue_scripts', 'img_a11y_enqueue_media_modal_script' );
