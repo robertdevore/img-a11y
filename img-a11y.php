@@ -77,7 +77,7 @@ function img_a11y_block_save_if_missing_alt_gutenberg( $prepared_post, $request 
 add_filter( 'rest_pre_insert_post', 'img_a11y_block_save_if_missing_alt_gutenberg', 10, 2 );
 
 /**
- * Check for images without alt tags in content.
+ * Check for images without alt tags in content, excluding decorative images by metadata.
  *
  * @param string $content The post content.
  * @return bool True if there are images without alt tags, false otherwise.
@@ -89,7 +89,12 @@ function img_a11y_has_images_without_alt( $content ) {
     $images = $dom->getElementsByTagName( 'img' );
 
     foreach ( $images as $img ) {
-        if ( ! $img->hasAttribute( 'alt' ) || trim( $img->getAttribute( 'alt' ) ) === '' ) {
+        $img_id = attachment_url_to_postid( $img->getAttribute( 'src' ) );
+
+        // If this image has decorative metadata, skip it
+        $is_decorative = get_post_meta( $img_id, '_is_decorative', true );
+        
+        if ( !$is_decorative && ( ! $img->hasAttribute( 'alt' ) || trim( $img->getAttribute( 'alt' ) ) === '' ) ) {
             return true;
         }
     }
