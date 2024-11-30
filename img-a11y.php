@@ -49,8 +49,8 @@ function img_a11y_block_save_if_missing_alt_classic( $post_id ) {
 
         remove_action( 'save_post', 'img_a11y_block_save_if_missing_alt_classic' );
         wp_update_post( [
-            'ID'           => $post_id,
-            'post_status'  => 'draft'
+            'ID'          => $post_id,
+            'post_status' => 'draft'
         ] );
     }
 }
@@ -114,7 +114,7 @@ function img_a11y_has_images_without_alt( $content ) {
 add_action( 'admin_notices', function() {
     if ( isset( $_GET['img_a11y_error'] ) && $_GET['img_a11y_error'] === 'missing_alt' ) {
         echo '<div class="notice notice-error"><p>';
-        _e( 'Save failed: Please ensure all images in the post content have alt tags or are marked as decorative for accessibility.', 'img-a11y' );
+        esc_html_e( 'Save failed: Please ensure all images in the post content have alt tags or are marked as decorative for accessibility.', 'img-a11y' );
         echo '</p></div>';
     }
 });
@@ -400,11 +400,10 @@ function img_a11y_settings_page() {
     $decorative_link              = add_query_arg( array_merge( $query_args, [ 'filter' => 'decorative' ] ), $base_url );
     $non_decorative_no_alt_link   = add_query_arg( array_merge( $query_args, [ 'filter' => 'non_decorative_no_alt' ] ), $base_url );
     $non_decorative_with_alt_link = add_query_arg( array_merge( $query_args, [ 'filter' => 'non_decorative_with_alt' ] ), $base_url );
-
     ?>
     <div class="wrap">
         <h1><?php esc_html_e( 'Images Accessibility Overview', 'img-a11y' ); ?></h1>
-        <p><a href="https://robertdevore.com/articles/img-a11y-getting-started/" target="_blank"><?php esc_attr_e( 'Documentation', 'img-a11y' ); ?></a> &middot; <a href="https://robertdevore.com/contact/" target="_blank"><?php esc_attr_e( 'Support', 'img-a11y' ); ?></a> &middot; <a href="https://deviodigital.com/" target="_blank"><?php esc_attr_e( 'More Plugins', 'img-a11y' ); ?></a></p>
+        <p><a href="https://robertdevore.com/articles/img-a11y/" target="_blank"><?php esc_attr_e( 'Documentation', 'img-a11y' ); ?></a> &middot; <a href="https://robertdevore.com/contact/" target="_blank"><?php esc_attr_e( 'Support', 'img-a11y' ); ?></a> &middot; <a href="https://deviodigital.com/" target="_blank"><?php esc_attr_e( 'More Plugins', 'img-a11y' ); ?></a></p>
         <hr style="margin: 24px 0;" />
         <div class="img-a11y-stats">
             <div class="img-a11y-stat-item <?php echo esc_attr( $active_class_decorative ); ?>">
