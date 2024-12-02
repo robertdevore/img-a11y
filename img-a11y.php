@@ -16,7 +16,7 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
-// Set up update checker
+// Set up update checker.
 require 'plugin-update-checker/plugin-update-checker.php';
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
@@ -247,185 +247,123 @@ add_action( 'admin_menu', 'img_a11y_add_admin_menu' );
  * @return void
  */
 function img_a11y_settings_page() {
-    // Get 'filter' parameter from GET; default to 'non_decorative_no_alt'.
-    $filter = isset( $_GET['filter'] ) ? $_GET['filter'] : 'non_decorative_no_alt';
+    $list_table = new IMG_A11Y_List_Table();
+    $list_table->prepare_items();
 
-    // Determine which box is active.
-    $active_class_decorative              = ( $filter === 'decorative' ) ? 'active' : '';
-    $active_class_non_decorative_no_alt   = ( $filter === 'non_decorative_no_alt' ) ? 'active' : '';
-    $active_class_non_decorative_with_alt = ( $filter === 'non_decorative_with_alt' ) ? 'active' : '';
-
-    // Total Images.
-    $args_total_images = [
-        'post_type'      => 'attachment',
-        'post_status'    => 'inherit',
-        'post_mime_type' => 'image',
-        'posts_per_page' => -1,
-        'fields'         => 'ids',
-    ];
-    $total_images = get_posts( $args_total_images );
-    $count_total_images = count( $total_images );
-
-    // Decorative Images With Alt Text.
-    $args_decorative_with_alt = [
+    // Count statistics for the filters.
+    $decorative_count = count( get_posts( [
         'post_type'      => 'attachment',
         'post_status'    => 'inherit',
         'post_mime_type' => 'image',
         'posts_per_page' => -1,
         'fields'         => 'ids',
         'meta_query'     => [
-            'relation' => 'AND',
             [
                 'key'     => '_is_decorative',
                 'value'   => '1',
                 'compare' => '=',
             ],
-            [
-                'key'     => '_wp_attachment_image_alt',
-                'value'   => '',
-                'compare' => '!=',
-            ],
         ],
-    ];
-    $images_decorative_with_alt = get_posts( $args_decorative_with_alt );
-    $count_decorative_with_alt  = count( $images_decorative_with_alt );
+    ] ) );
 
-    // Decorative Images Without Alt Text.
-    $args_decorative_no_alt = [
+    $non_decorative_no_alt_count = count( get_posts( [
         'post_type'      => 'attachment',
         'post_status'    => 'inherit',
         'post_mime_type' => 'image',
         'posts_per_page' => -1,
         'fields'         => 'ids',
         'meta_query'     => [
-            'relation' => 'AND',
             [
-                'key'     => '_is_decorative',
-                'value'   => '1',
-                'compare' => '=',
-            ],
-            [
-                'relation' => 'OR',
+                'relation' => 'AND',
                 [
-                    'key'     => '_wp_attachment_image_alt',
-                    'compare' => 'NOT EXISTS',
+                    'relation' => 'OR',
+                    [
+                        'key'     => '_is_decorative',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key'     => '_is_decorative',
+                        'value'   => '0',
+                        'compare' => '=',
+                    ],
+                ],
+                [
+                    'relation' => 'OR',
+                    [
+                        'key'     => '_wp_attachment_image_alt',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key'     => '_wp_attachment_image_alt',
+                        'value'   => '',
+                        'compare' => '=',
+                    ],
+                ],
+            ],
+        ],
+    ] ) );
+
+    $non_decorative_with_alt_count = count( get_posts( [
+        'post_type'      => 'attachment',
+        'post_status'    => 'inherit',
+        'post_mime_type' => 'image',
+        'posts_per_page' => -1,
+        'fields'         => 'ids',
+        'meta_query'     => [
+            [
+                'relation' => 'AND',
+                [
+                    'relation' => 'OR',
+                    [
+                        'key'     => '_is_decorative',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key'     => '_is_decorative',
+                        'value'   => '0',
+                        'compare' => '=',
+                    ],
                 ],
                 [
                     'key'     => '_wp_attachment_image_alt',
                     'value'   => '',
-                    'compare' => '=',
+                    'compare' => '!=',
                 ],
             ],
         ],
-    ];
-    $images_decorative_no_alt = get_posts( $args_decorative_no_alt );
-    $count_decorative_no_alt  = count( $images_decorative_no_alt );
+    ] ) );
 
-    // Non-Decorative Images With Alt Text.
-    $args_non_decorative_with_alt = [
-        'post_type'      => 'attachment',
-        'post_status'    => 'inherit',
-        'post_mime_type' => 'image',
-        'posts_per_page' => -1,
-        'fields'         => 'ids',
-        'meta_query'     => [
-            'relation' => 'AND',
-            [
-                'relation' => 'OR',
-                [
-                    'key'     => '_is_decorative',
-                    'compare' => 'NOT EXISTS',
-                ],
-                [
-                    'key'     => '_is_decorative',
-                    'value'   => '0',
-                    'compare' => '=',
-                ],
-            ],
-            [
-                'key'     => '_wp_attachment_image_alt',
-                'value'   => '',
-                'compare' => '!=',
-            ],
-        ],
-    ];
-    $images_non_decorative_with_alt = get_posts( $args_non_decorative_with_alt );
-    $count_non_decorative_with_alt  = count( $images_non_decorative_with_alt );
+    $filter = isset( $_GET['filter'] ) ? sanitize_text_field( $_GET['filter'] ) : 'non_decorative_no_alt';
 
-    // Non-Decorative Images Without Alt Text.
-    $args_non_decorative_no_alt = [
-        'post_type'      => 'attachment',
-        'post_status'    => 'inherit',
-        'post_mime_type' => 'image',
-        'posts_per_page' => -1,
-        'fields'         => 'ids',
-        'meta_query'     => [
-            'relation' => 'AND',
-            [
-                'relation' => 'OR',
-                [
-                    'key'     => '_is_decorative',
-                    'compare' => 'NOT EXISTS',
-                ],
-                [
-                    'key'     => '_is_decorative',
-                    'value'   => '0',
-                    'compare' => '=',
-                ],
-            ],
-            [
-                'relation' => 'OR',
-                [
-                    'key'     => '_wp_attachment_image_alt',
-                    'compare' => 'NOT EXISTS',
-                ],
-                [
-                    'key'     => '_wp_attachment_image_alt',
-                    'value'   => '',
-                    'compare' => '=',
-                ],
-            ],
-        ],
-    ];
-    $images_non_decorative_no_alt = get_posts( $args_non_decorative_no_alt );
-    $count_non_decorative_no_alt  = count( $images_non_decorative_no_alt );
-
-    // Build the base URL for the links.
-    $base_url   = admin_url( 'upload.php' );
+    $base_url = admin_url( 'upload.php' );
     $query_args = [
         'page' => 'img-a11y-images-without-alt-text',
     ];
 
-    // Generate links for each filter.
-    $decorative_link              = add_query_arg( array_merge( $query_args, [ 'filter' => 'decorative' ] ), $base_url );
-    $non_decorative_no_alt_link   = add_query_arg( array_merge( $query_args, [ 'filter' => 'non_decorative_no_alt' ] ), $base_url );
-    $non_decorative_with_alt_link = add_query_arg( array_merge( $query_args, [ 'filter' => 'non_decorative_with_alt' ] ), $base_url );
     ?>
     <div class="wrap">
         <h1><?php esc_html_e( 'Images Accessibility Overview', 'img-a11y' ); ?></h1>
-        <p><a href="https://robertdevore.com/articles/img-a11y/" target="_blank"><?php esc_attr_e( 'Documentation', 'img-a11y' ); ?></a> &middot; <a href="https://robertdevore.com/contact/" target="_blank"><?php esc_attr_e( 'Support', 'img-a11y' ); ?></a> &middot; <a href="https://deviodigital.com/" target="_blank"><?php esc_attr_e( 'More Plugins', 'img-a11y' ); ?></a></p>
-        <hr style="margin: 24px 0;" />
         <div class="img-a11y-stats">
-            <div class="img-a11y-stat-item <?php echo esc_attr( $active_class_decorative ); ?>">
-                <a href="<?php echo esc_url( $decorative_link ); ?>" style="text-decoration: none; color: inherit;">
-                    <h2><?php echo esc_html( $count_decorative_with_alt + $count_decorative_no_alt ); ?></h2>
+            <div class="img-a11y-stat-item <?php echo ( $filter === 'decorative' ) ? 'active' : ''; ?>">
+                <a href="<?php echo esc_url( add_query_arg( array_merge( $query_args, [ 'filter' => 'decorative' ] ), $base_url ) ); ?>" style="text-decoration: none; color: inherit;">
+                    <h2><?php echo esc_html( $decorative_count ); ?></h2>
                     <p><?php esc_html_e( 'Decorative Images', 'img-a11y' ); ?></p>
                 </a>
             </div>
-            <div class="img-a11y-stat-item <?php echo esc_attr( $active_class_non_decorative_no_alt ); ?>">
-                <a href="<?php echo esc_url( $non_decorative_no_alt_link ); ?>" style="text-decoration: none; color: inherit;">
-                    <h2><?php echo esc_html( $count_non_decorative_no_alt ); ?></h2>
+            <div class="img-a11y-stat-item <?php echo ( $filter === 'non_decorative_no_alt' ) ? 'active' : ''; ?>">
+                <a href="<?php echo esc_url( add_query_arg( array_merge( $query_args, [ 'filter' => 'non_decorative_no_alt' ] ), $base_url ) ); ?>" style="text-decoration: none; color: inherit;">
+                    <h2><?php echo esc_html( $non_decorative_no_alt_count ); ?></h2>
                     <p><?php esc_html_e( 'Non-Decorative Images Without Alt Text', 'img-a11y' ); ?></p>
                 </a>
             </div>
-            <div class="img-a11y-stat-item <?php echo esc_attr( $active_class_non_decorative_with_alt ); ?>">
-                <a href="<?php echo esc_url( $non_decorative_with_alt_link ); ?>" style="text-decoration: none; color: inherit;">
-                    <h2><?php echo esc_html( $count_non_decorative_with_alt ); ?></h2>
+            <div class="img-a11y-stat-item <?php echo ( $filter === 'non_decorative_with_alt' ) ? 'active' : ''; ?>">
+                <a href="<?php echo esc_url( add_query_arg( array_merge( $query_args, [ 'filter' => 'non_decorative_with_alt' ] ), $base_url ) ); ?>" style="text-decoration: none; color: inherit;">
+                    <h2><?php echo esc_html( $non_decorative_with_alt_count ); ?></h2>
                     <p><?php esc_html_e( 'Non-Decorative Images With Alt Text', 'img-a11y' ); ?></p>
                 </a>
             </div>
         </div>
-        <hr style="margin: 24px 0;" />
+        <hr />
         <style>
             .img-a11y-stats {
                 display: flex;
@@ -476,150 +414,11 @@ function img_a11y_settings_page() {
                 text-align: center;
             }
         </style>
-        <table class="wp-list-table widefat fixed striped">
-            <thead>
-                <tr>
-                    <th class="img-a11y-thumbnail-column"><?php esc_html_e( 'Thumbnail', 'img-a11y' ); ?></th>
-                    <th class="img-a11y-id-column"><?php esc_html_e( 'ID', 'img-a11y' ); ?></th>
-                    <th><?php esc_html_e( 'Title', 'img-a11y' ); ?></th>
-                    <th><?php esc_html_e( 'File', 'img-a11y' ); ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                // Build the meta query based on $filter.
-                $meta_query = [];
-
-                switch ( $filter ) {
-                    case 'decorative':
-                        $meta_query[] = [
-                            'key'     => '_is_decorative',
-                            'value'   => '1',
-                            'compare' => '=',
-                        ];
-                        break;
-
-                    case 'non_decorative_no_alt':
-                        $meta_query[] = [
-                            'relation' => 'AND',
-                            [
-                                'relation' => 'OR',
-                                [
-                                    'key'     => '_is_decorative',
-                                    'compare' => 'NOT EXISTS',
-                                ],
-                                [
-                                    'key'     => '_is_decorative',
-                                    'value'   => '0',
-                                    'compare' => '=',
-                                ],
-                            ],
-                            [
-                                'relation' => 'OR',
-                                [
-                                    'key'     => '_wp_attachment_image_alt',
-                                    'compare' => 'NOT EXISTS',
-                                ],
-                                [
-                                    'key'     => '_wp_attachment_image_alt',
-                                    'value'   => '',
-                                    'compare' => '=',
-                                ],
-                            ],
-                        ];
-                        break;
-
-                    case 'non_decorative_with_alt':
-                        $meta_query[] = [
-                            'relation' => 'AND',
-                            [
-                                'relation' => 'OR',
-                                [
-                                    'key'     => '_is_decorative',
-                                    'compare' => 'NOT EXISTS',
-                                ],
-                                [
-                                    'key'     => '_is_decorative',
-                                    'value'   => '0',
-                                    'compare' => '=',
-                                ],
-                            ],
-                            [
-                                'key'     => '_wp_attachment_image_alt',
-                                'value'   => '',
-                                'compare' => '!=',
-                            ],
-                        ];
-                        break;
-
-                    default:
-                        // Default to 'non_decorative_no_alt' filter if unknown filter is provided.
-                        $meta_query[] = [
-                            'relation' => 'AND',
-                            [
-                                'relation' => 'OR',
-                                [
-                                    'key'     => '_is_decorative',
-                                    'compare' => 'NOT EXISTS',
-                                ],
-                                [
-                                    'key'     => '_is_decorative',
-                                    'value'   => '0',
-                                    'compare' => '=',
-                                ],
-                            ],
-                            [
-                                'relation' => 'OR',
-                                [
-                                    'key'     => '_wp_attachment_image_alt',
-                                    'compare' => 'NOT EXISTS',
-                                ],
-                                [
-                                    'key'     => '_wp_attachment_image_alt',
-                                    'value'   => '',
-                                    'compare' => '=',
-                                ],
-                            ],
-                        ];
-                        break;
-                }
-
-                $args = [
-                    'post_type'      => 'attachment',
-                    'post_status'    => 'inherit',
-                    'post_mime_type' => 'image',
-                    'posts_per_page' => -1,
-                ];
-
-                if ( ! empty( $meta_query ) ) {
-                    $args['meta_query'] = $meta_query;
-                }
-
-                $query = new WP_Query( $args );
-
-                if ( $query->have_posts() ) {
-                    while ( $query->have_posts() ) {
-                        $query->the_post();
-                        $id        = get_the_ID();
-                        $title     = get_the_title();
-                        $file      = wp_get_attachment_url( $id );
-                        $edit_link = get_edit_post_link( $id );
-                        $thumbnail = wp_get_attachment_image( $id, [ 80, 80 ] );
-
-                        echo '<tr>';
-                        echo '<td class="img-a11y-thumbnail-column">' . $thumbnail . '</td>';
-                        echo '<td class="img-a11y-id-column"><a href="' . esc_url( $edit_link ) . '" target="_blank">' . esc_html( $id ) . '</a></td>';
-                        echo '<td>' . esc_html( $title ) . '</td>';
-                        echo '<td><a href="' . esc_url( $file ) . '" target="_blank">' . esc_html__( 'View File', 'img-a11y' ) . '</a></td>';
-                        echo '</tr>';
-                    }
-                    wp_reset_postdata();
-                } else {
-                    echo '<tr><td colspan="4">' . esc_html__( 'No images found for the selected category.', 'img-a11y' ) . '</td></tr>';
-                }
-                ?>
-            </tbody>
-        </table>
+        <form method="get">
+            <input type="hidden" name="page" value="img-a11y-images-without-alt-text" />
+            <input type="hidden" name="filter" value="<?php echo esc_attr( $filter ); ?>" />
+            <?php $list_table->display(); ?>
+        </form>
     </div>
     <?php
 }
@@ -641,3 +440,119 @@ function img_a11y_add_admin_css() {
     }
 }
 add_action( 'admin_head', 'img_a11y_add_admin_css' );
+
+if ( ! class_exists( 'WP_List_Table' ) ) {
+    require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
+}
+
+class IMG_A11Y_List_Table extends WP_List_Table {
+    public function __construct() {
+        parent::__construct( [
+            'singular' => __( 'Image', 'img-a11y' ),
+            'plural'   => __( 'Images', 'img-a11y' ),
+            'ajax'     => false,
+        ] );
+    }
+
+    public function get_columns() {
+        return [
+            'thumbnail' => __( 'Thumbnail', 'img-a11y' ),
+            'id'        => __( 'ID', 'img-a11y' ),
+            'title'     => __( 'Title', 'img-a11y' ),
+            'file'      => __( 'File', 'img-a11y' ),
+        ];
+    }
+
+    public function prepare_items() {
+        $per_page = 36; // Set the number of items per page.
+        $current_page = $this->get_pagenum();
+    
+        $args = [
+            'post_type'      => 'attachment',
+            'post_status'    => 'inherit',
+            'post_mime_type' => 'image',
+            'posts_per_page' => $per_page,
+            'paged'          => $current_page,
+        ];
+    
+        // Apply filters for different states (e.g., decorative, no alt text).
+        if ( isset( $_GET['filter'] ) && $_GET['filter'] === 'non_decorative_no_alt' ) {
+            $args['meta_query'] = [
+                [
+                    'relation' => 'AND',
+                    [
+                        'relation' => 'OR',
+                        [
+                            'key'     => '_is_decorative',
+                            'compare' => 'NOT EXISTS',
+                        ],
+                        [
+                            'key'     => '_is_decorative',
+                            'value'   => '0',
+                            'compare' => '=',
+                        ],
+                    ],
+                    [
+                        'relation' => 'OR',
+                        [
+                            'key'     => '_wp_attachment_image_alt',
+                            'compare' => 'NOT EXISTS',
+                        ],
+                        [
+                            'key'     => '_wp_attachment_image_alt',
+                            'value'   => '',
+                            'compare' => '=',
+                        ],
+                    ],
+                ],
+            ];
+        }
+    
+        $query = new WP_Query( $args );
+    
+        // Assign items and pagination.
+        $this->items = $query->posts;
+    
+        $this->set_pagination_args( [
+            'total_items' => $query->found_posts,
+            'per_page'    => $per_page,
+            'total_pages' => ceil( $query->found_posts / $per_page ),
+        ] );
+    }
+    
+    public function column_default( $item, $column_name ) {
+        switch ( $column_name ) {
+            case 'thumbnail':
+                // Use the ID to fetch the thumbnail.
+                return wp_get_attachment_image( $item->ID, [ 80, 80 ] );
+    
+            case 'id':
+                // Simply return the ID.
+                return $item->ID;
+    
+            case 'title':
+                // Fetch and sanitize the title.
+                return esc_html( get_the_title( $item->ID ) );
+    
+            case 'file':
+                // Generate the file URL with a clickable link.
+                $file_url = wp_get_attachment_url( $item->ID );
+                return $file_url ? '<a href="' . esc_url( $file_url ) . '" target="_blank">' . esc_html__( 'View File', 'img-a11y' ) . '</a>' : esc_html__( 'No File', 'img-a11y' );
+    
+            default:
+                return esc_html__( 'N/A', 'img-a11y' );
+        }
+    }
+
+    public function display_rows() {
+        foreach ( $this->items as $item ) {
+            echo '<tr>';
+            foreach ( $this->get_columns() as $column_name => $column_display_name ) {
+                echo '<td>';
+                echo $this->column_default( $item, $column_name );
+                echo '</td>';
+            }
+            echo '</tr>';
+        }
+    }
+}
