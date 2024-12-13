@@ -207,19 +207,40 @@ add_action( 'admin_notices', function() {
  * @return void
  */
 function img_a11y_enqueue_media_modal_script() {
+    wp_enqueue_style(
+        'img-a11y-styles',
+        plugin_dir_url( __FILE__ ) . 'assets/css/img-a11y-styles.css',
+        [],
+        IMG_A11Y_VERSION,
+        'all'
+    );
+
     wp_enqueue_script(
         'img-a11y-media-modal',
-        plugin_dir_url( __FILE__ ) . 'js/img-a11y-media-modal.js',
+        plugin_dir_url( __FILE__ ) . 'assets/js/img-a11y-media-modal.js',
         [ 'jquery' ],
         IMG_A11Y_VERSION,
         true
     );
 
-    // Localize strings and data for JavaScript.
     wp_localize_script( 'img-a11y-media-modal', 'imgA11yData', [
         'decorativeLabel' => esc_html__( 'Mark as Decorative', 'img-a11y' ),
         'decorativeHelp'  => esc_html__( 'Check if this image is decorative and does not require alt text.', 'img-a11y' ),
     ] );
+
+    wp_enqueue_script(
+        'img-a11y-inline-edit',
+        plugin_dir_url( __FILE__ ) . 'assets/js/img-a11y-inline-edit.js',
+        [ 'jquery' ],
+        IMG_A11Y_VERSION,
+        true
+    );
+
+    wp_localize_script( 'img-a11y-inline-edit', 'imgA11yAjax', [
+        'ajax_url' => admin_url( 'admin-ajax.php' ),
+        'nonce'    => wp_create_nonce( 'img_a11y_nonce' ),
+    ] );
+
 }
 add_action( 'admin_enqueue_scripts', 'img_a11y_enqueue_media_modal_script' );
 
@@ -342,7 +363,11 @@ function img_a11y_settings_page() {
 
     ?>
     <div class="wrap">
-        <h1><?php esc_html_e( 'Images Accessibility Overview', 'img-a11y' ); ?></h1>
+        <h1>
+            <?php esc_html_e( 'Images Accessibility Overview', 'img-a11y' ); ?>
+
+        </h1>
+        <hr />
         <div class="img-a11y-stats">
             <div class="img-a11y-stat-item <?php echo ( $filter === 'decorative' ) ? 'active' : ''; ?>">
                 <a href="<?php echo esc_url( add_query_arg( array_merge( $query_args, [ 'filter' => 'decorative' ] ), $base_url ) ); ?>" style="text-decoration: none; color: inherit;">
@@ -364,56 +389,6 @@ function img_a11y_settings_page() {
             </div>
         </div>
         <hr />
-        <style>
-            .img-a11y-stats {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 20px;
-                margin-bottom: 20px;
-            }
-            .img-a11y-stat-item {
-                background: #fff;
-                border: 1px solid #ccd0d4;
-                padding: 20px;
-                flex: 1;
-                text-align: center;
-                border-radius: 4px;
-                box-shadow: 0 1px 1px rgba(0,0,0,0.04);
-                transition: all 0.3s ease;
-            }
-            .img-a11y-stat-item:hover {
-                box-shadow: 0 0 5px rgba(0,124,186,0.5);
-            }
-            .img-a11y-stat-item.active {
-                border-color: #007cba;
-                box-shadow: 0 0 5px rgba(0,124,186,0.5);
-            }
-            .img-a11y-stat-item h2 {
-                font-size: 2em;
-                margin: 0;
-                color: #007cba;
-            }
-            .img-a11y-stat-item p {
-                margin: 10px 0 0;
-                color: #555d66;
-                font-size: 1em;
-            }
-            .img-a11y-stat-item.active h2,
-            .img-a11y-stat-item.active p {
-                color: #007cba;
-            }
-            .img-a11y-thumbnail-column {
-                width: 80px;
-            }
-            .img-a11y-id-column {
-                max-width: 100px;
-                word-break: break-word;
-            }
-            .img-a11y-decorative-column {
-                width: 100px;
-                text-align: center;
-            }
-        </style>
         <form method="get">
             <input type="hidden" name="page" value="img-a11y-images-without-alt-text" />
             <input type="hidden" name="filter" value="<?php echo esc_attr( $filter ); ?>" />
@@ -459,6 +434,7 @@ class IMG_A11Y_List_Table extends WP_List_Table {
             'thumbnail' => __( 'Thumbnail', 'img-a11y' ),
             'id'        => __( 'ID', 'img-a11y' ),
             'title'     => __( 'Title', 'img-a11y' ),
+            'alt_text'  => __( 'Alt Text', 'img-a11y' ),
             'file'      => __( 'File', 'img-a11y' ),
         ];
     }
@@ -467,6 +443,7 @@ class IMG_A11Y_List_Table extends WP_List_Table {
         $per_page = 36; // Set the number of items per page.
         $current_page = $this->get_pagenum();
     
+        // Default query arguments.
         $args = [
             'post_type'      => 'attachment',
             'post_status'    => 'inherit',
@@ -475,10 +452,20 @@ class IMG_A11Y_List_Table extends WP_List_Table {
             'paged'          => $current_page,
         ];
     
-        // Apply filters for different states (e.g., decorative, no alt text).
-        if ( isset( $_GET['filter'] ) && $_GET['filter'] === 'non_decorative_no_alt' ) {
-            $args['meta_query'] = [
-                [
+        // Apply filters based on the selected tab.
+        if ( isset( $_GET['filter'] ) ) {
+            $filter = isset( $_GET['filter'] ) ? sanitize_text_field( $_GET['filter'] ) : 'non_decorative_no_alt';
+
+            if ( $filter === 'decorative' ) {
+                $args['meta_query'] = [
+                    [
+                        'key'     => '_is_decorative',
+                        'value'   => '1',
+                        'compare' => '=',
+                    ],
+                ];
+            } elseif ( $filter === 'non_decorative_no_alt' ) {
+                $args['meta_query'] = [
                     'relation' => 'AND',
                     [
                         'relation' => 'OR',
@@ -504,8 +491,29 @@ class IMG_A11Y_List_Table extends WP_List_Table {
                             'compare' => '=',
                         ],
                     ],
-                ],
-            ];
+                ];
+            } elseif ( $filter === 'non_decorative_with_alt' ) {
+                $args['meta_query'] = [
+                    'relation' => 'AND',
+                    [
+                        'relation' => 'OR',
+                        [
+                            'key'     => '_is_decorative',
+                            'compare' => 'NOT EXISTS',
+                        ],
+                        [
+                            'key'     => '_is_decorative',
+                            'value'   => '0',
+                            'compare' => '=',
+                        ],
+                    ],
+                    [
+                        'key'     => '_wp_attachment_image_alt',
+                        'value'   => '',
+                        'compare' => '!=',
+                    ],
+                ];
+            }
         }
     
         $query = new WP_Query( $args );
@@ -519,7 +527,7 @@ class IMG_A11Y_List_Table extends WP_List_Table {
             'total_pages' => ceil( $query->found_posts / $per_page ),
         ] );
     }
-    
+        
     public function column_default( $item, $column_name ) {
         switch ( $column_name ) {
             case 'thumbnail':
@@ -534,6 +542,18 @@ class IMG_A11Y_List_Table extends WP_List_Table {
                 // Fetch and sanitize the title.
                 return esc_html( get_the_title( $item->ID ) );
     
+            case 'alt_text':
+                // Fetch the current alt text for the image.
+                $alt_text = get_post_meta( $item->ID, '_wp_attachment_image_alt', true );
+
+                // Render a text input for inline editing.
+                return sprintf(
+                    '<input type="text" class="img-a11y-alt-text" data-id="%d" value="%s" placeholder="%s">',
+                    esc_attr( $item->ID ),
+                    esc_attr( $alt_text ),
+                    esc_html__( 'Enter Alt Text', 'img-a11y' )
+                );
+        
             case 'file':
                 // Generate the file URL with a clickable link.
                 $file_url = wp_get_attachment_url( $item->ID );
@@ -556,3 +576,24 @@ class IMG_A11Y_List_Table extends WP_List_Table {
         }
     }
 }
+
+function img_a11y_update_alt_text() {
+    // Verify nonce for security
+    check_ajax_referer( 'img_a11y_nonce', 'nonce' );
+
+    // Get the data
+    $attachment_id = intval( $_POST['id'] );
+    $alt_text      = sanitize_text_field( $_POST['alt_text'] );
+
+    // Check if the user has permission to edit this attachment
+    if ( ! current_user_can( 'edit_post', $attachment_id ) ) {
+        wp_send_json_error( [ 'message' => __( 'You do not have permission to edit this image.', 'img-a11y' ) ] );
+    }
+
+    // Update the alt text meta field
+    update_post_meta( $attachment_id, '_wp_attachment_image_alt', $alt_text );
+
+    // Return success response
+    wp_send_json_success( [ 'message' => __( 'Alt text updated successfully.', 'img-a11y' ) ] );
+}
+add_action( 'wp_ajax_img_a11y_update_alt_text', 'img_a11y_update_alt_text' );
