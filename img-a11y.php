@@ -34,6 +34,9 @@ define( 'IMG_A11Y_VERSION', '1.0.0' );
  * Block saving if images are missing alt tags (Classic Editor).
  *
  * @param int $post_id The ID of the post being saved.
+ * 
+ * @since  1.0.0
+ * @return void
  */
 function img_a11y_block_save_if_missing_alt_classic( $post_id ) {
     if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
@@ -438,9 +441,7 @@ class IMG_A11Y_List_Table extends WP_List_Table {
         return [
             'thumbnail' => __( 'Thumbnail', 'img-a11y' ),
             'id'        => __( 'ID', 'img-a11y' ),
-            'title'     => __( 'Title', 'img-a11y' ),
             'alt_text'  => __( 'Alt Text', 'img-a11y' ),
-            'file'      => __( 'File', 'img-a11y' ),
         ];
     }
 
@@ -536,34 +537,34 @@ class IMG_A11Y_List_Table extends WP_List_Table {
     public function column_default( $item, $column_name ) {
         switch ( $column_name ) {
             case 'thumbnail':
-                // Use the ID to fetch the thumbnail.
-                return wp_get_attachment_image( $item->ID, [ 80, 80 ] );
-
+                // Fetch the thumbnail and make it a clickable link to the full-size image.
+                $full_image_url = wp_get_attachment_url( $item->ID );
+                return sprintf(
+                    '<a href="%s" target="_blank">%s</a>',
+                    esc_url( $full_image_url ),
+                    wp_get_attachment_image( $item->ID, [ 80, 80 ] )
+                );
+            
             case 'id':
-                // Simply return the ID.
-                return $item->ID;
-
-            case 'title':
-                // Fetch and sanitize the title.
-                return esc_html( get_the_title( $item->ID ) );
-
+                // Return the ID as a link to the Edit Media screen.
+                $edit_link = get_edit_post_link( $item->ID );
+                return sprintf(
+                    '<a href="%s">%d</a>',
+                    esc_url( $edit_link ),
+                    $item->ID
+                );
+            
             case 'alt_text':
                 // Fetch the current alt text for the image.
                 $alt_text = get_post_meta( $item->ID, '_wp_attachment_image_alt', true );
-
+            
                 // Render a text input for inline editing.
                 return sprintf(
                     '<input type="text" class="img-a11y-alt-text" data-id="%d" value="%s" placeholder="%s">',
                     esc_attr( $item->ID ),
                     esc_attr( $alt_text ),
                     esc_html__( 'Enter Alt Text', 'img-a11y' )
-                );
-
-            case 'file':
-                // Generate the file URL with a clickable link.
-                $file_url = wp_get_attachment_url( $item->ID );
-                return $file_url ? '<a href="' . esc_url( $file_url ) . '" target="_blank">' . esc_html__( 'View File', 'img-a11y' ) . '</a>' : esc_html__( 'No File', 'img-a11y' );
-
+                );            
             default:
                 return esc_html__( 'N/A', 'img-a11y' );
         }

@@ -80,3 +80,36 @@
 .img-a11y-stats {
     margin-top: 12px;
 }
+
+#the-list {
+    table-layout: fixed;
+    width: 100%;
+}
+
+#the-list td:nth-child(1), /* Thumbnail column */
+#the-list th:nth-child(1) {
+    width: 100px;
+    max-width: 100px;
+    overflow: hidden;
+}
+
+#the-list td:nth-child(2), /* ID column */
+#the-list th:nth-child(2) {
+    width: 100px;
+    max-width: 100px;
+    overflow: hidden;
+}
+
+#the-list td:nth-child(3), /* Alt Text column */
+#the-list th:nth-child(3) {
+    width: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#the-list td:nth-child(1) img {
+    max-width: 80px;
+    max-height: 80px;
+    display: block;
+}
