@@ -1,3 +1,15 @@
+#img-a11y-support-btn,
+#img-a11y-docs-btn {
+    line-height: 22px;
+    float: right;
+    margin-left: 12px;
+    display: flex;
+    align-content: center;
+    align-items: center;
+    gap: 6;
+}
+
+
 .img-a11y-stats {
     display: flex;
     flex-wrap: wrap;
@@ -66,11 +78,6 @@
     transform: translateY(0);
 }
 
-.img-a11y-alt-text.loading {
-    background: url('spinner.gif') no-repeat right center;
-    background-size: 20px 20px;
-}
-
 .img-a11y-stats {
-    margin-top: 24px;
+    margin-top: 12px;
 }

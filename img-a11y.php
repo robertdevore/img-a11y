@@ -365,7 +365,12 @@ function img_a11y_settings_page() {
     <div class="wrap">
         <h1>
             <?php esc_html_e( 'Images Accessibility Overview', 'img-a11y' ); ?>
-
+            <a id="img-a11y-support-btn" href="https://robertdevore.com/contact/" target="_blank" class="button button-alt" style="margin-left: 10px;">
+                <span class="dashicons dashicons-format-chat" style="vertical-align: middle;"></span> <?php esc_html_e( 'Support', 'img-a11y' ); ?>
+            </a>
+            <a id="img-a11y-docs-btn" href="https://robertdevore.com/articles/img-a11y/" target="_blank" class="button button-alt" style="margin-left: 5px;">
+                <span class="dashicons dashicons-media-document" style="vertical-align: middle;"></span> <?php esc_html_e( 'Documentation', 'img-a11y' ); ?>
+            </a>
         </h1>
         <hr />
         <div class="img-a11y-stats">
