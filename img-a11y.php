@@ -102,7 +102,7 @@ function img_a11y_has_images_without_alt( $content ) {
 
         // If this image has decorative metadata, skip it.
         $is_decorative = get_post_meta( $img_id, '_is_decorative', true );
-        
+
         if ( !$is_decorative && ( ! $img->hasAttribute( 'alt' ) || trim( $img->getAttribute( 'alt' ) ) === '' ) ) {
             return true;
         }
@@ -445,9 +445,9 @@ class IMG_A11Y_List_Table extends WP_List_Table {
     }
 
     public function prepare_items() {
-        $per_page = 36; // Set the number of items per page.
+        $per_page     = 36;
         $current_page = $this->get_pagenum();
-    
+
         // Default query arguments.
         $args = [
             'post_type'      => 'attachment',
@@ -456,7 +456,7 @@ class IMG_A11Y_List_Table extends WP_List_Table {
             'posts_per_page' => $per_page,
             'paged'          => $current_page,
         ];
-    
+
         // Apply filters based on the selected tab.
         if ( isset( $_GET['filter'] ) ) {
             $filter = isset( $_GET['filter'] ) ? sanitize_text_field( $_GET['filter'] ) : 'non_decorative_no_alt';
@@ -520,33 +520,33 @@ class IMG_A11Y_List_Table extends WP_List_Table {
                 ];
             }
         }
-    
+
         $query = new WP_Query( $args );
-    
+
         // Assign items and pagination.
         $this->items = $query->posts;
-    
+
         $this->set_pagination_args( [
             'total_items' => $query->found_posts,
             'per_page'    => $per_page,
             'total_pages' => ceil( $query->found_posts / $per_page ),
         ] );
     }
-        
+
     public function column_default( $item, $column_name ) {
         switch ( $column_name ) {
             case 'thumbnail':
                 // Use the ID to fetch the thumbnail.
                 return wp_get_attachment_image( $item->ID, [ 80, 80 ] );
-    
+
             case 'id':
                 // Simply return the ID.
                 return $item->ID;
-    
+
             case 'title':
                 // Fetch and sanitize the title.
                 return esc_html( get_the_title( $item->ID ) );
-    
+
             case 'alt_text':
                 // Fetch the current alt text for the image.
                 $alt_text = get_post_meta( $item->ID, '_wp_attachment_image_alt', true );
@@ -558,12 +558,12 @@ class IMG_A11Y_List_Table extends WP_List_Table {
                     esc_attr( $alt_text ),
                     esc_html__( 'Enter Alt Text', 'img-a11y' )
                 );
-        
+
             case 'file':
                 // Generate the file URL with a clickable link.
                 $file_url = wp_get_attachment_url( $item->ID );
                 return $file_url ? '<a href="' . esc_url( $file_url ) . '" target="_blank">' . esc_html__( 'View File', 'img-a11y' ) . '</a>' : esc_html__( 'No File', 'img-a11y' );
-    
+
             default:
                 return esc_html__( 'N/A', 'img-a11y' );
         }
@@ -583,22 +583,22 @@ class IMG_A11Y_List_Table extends WP_List_Table {
 }
 
 function img_a11y_update_alt_text() {
-    // Verify nonce for security
+    // Verify nonce for security.
     check_ajax_referer( 'img_a11y_nonce', 'nonce' );
 
-    // Get the data
+    // Get the data.
     $attachment_id = intval( $_POST['id'] );
     $alt_text      = sanitize_text_field( $_POST['alt_text'] );
 
-    // Check if the user has permission to edit this attachment
+    // Check if the user has permission to edit this attachment.
     if ( ! current_user_can( 'edit_post', $attachment_id ) ) {
         wp_send_json_error( [ 'message' => __( 'You do not have permission to edit this image.', 'img-a11y' ) ] );
     }
 
-    // Update the alt text meta field
+    // Update the alt text meta field.
     update_post_meta( $attachment_id, '_wp_attachment_image_alt', $alt_text );
 
-    // Return success response
+    // Return success response.
     wp_send_json_success( [ 'message' => __( 'Alt text updated successfully.', 'img-a11y' ) ] );
 }
 add_action( 'wp_ajax_img_a11y_update_alt_text', 'img_a11y_update_alt_text' );
