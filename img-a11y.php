@@ -203,14 +203,24 @@ function img_a11y_block_media_save_if_missing_alt( $post, $attachment ) {
 }
 add_filter( 'attachment_fields_to_save', 'img_a11y_block_media_save_if_missing_alt', 10, 2 );
 
-// Display admin notice on Edit Media screen if alt text is missing and "Decorative" is unchecked.
-add_action( 'admin_notices', function() {
+/**
+ * Display an admin notice on the Edit Media screen if the alt text is missing 
+ * and the "Decorative" checkbox is unchecked.
+ *
+ * This function hooks into 'admin_notices' and checks for the 'img_a11y_media_error'
+ * query parameter. If the error is set to 'missing_alt', it displays an error message.
+ *
+ * @since  1.0.0
+ * @return void
+ */
+function img_a11y_display_admin_notice() {
     if ( isset( $_GET['img_a11y_media_error'] ) && $_GET['img_a11y_media_error'] === 'missing_alt' ) {
         echo '<div class="notice notice-error"><p>';
-        _e( 'Save failed: Please provide an Alt tag for accessibility or mark the image as decorative.', 'img-a11y' );
+        esc_html_e( 'Save failed: Please provide an Alt tag for accessibility or mark the image as decorative.', 'img-a11y' );
         echo '</p></div>';
     }
-} );
+}
+add_action( 'admin_notices', 'img_a11y_display_admin_notice' );
 
 /**
  * Enqueue JavaScript for adding the "Decorative" field in the media modal.
@@ -368,7 +378,7 @@ function img_a11y_settings_page() {
 
     $filter = isset( $_GET['filter'] ) ? sanitize_text_field( $_GET['filter'] ) : 'non_decorative_no_alt';
 
-    $base_url = admin_url( 'upload.php' );
+    $base_url   = admin_url( 'upload.php' );
     $query_args = [
         'page' => 'img-a11y-images-without-alt-text',
     ];
