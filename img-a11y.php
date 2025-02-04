@@ -602,6 +602,16 @@ class IMG_A11Y_List_Table extends WP_List_Table {
     }
 }
 
+/**
+ * Handles the AJAX request to update the alt text of an image attachment.
+ *
+ * This function verifies the nonce for security, checks user permissions,
+ * and updates the `_wp_attachment_image_alt` meta field for the given attachment.
+ * It then returns a JSON success or error response.
+ *
+ * @since  1.0.0
+ * @return void Outputs a JSON response and exits.
+ */
 function img_a11y_update_alt_text() {
     // Verify nonce for security.
     check_ajax_referer( 'img_a11y_nonce', 'nonce' );
