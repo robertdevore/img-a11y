@@ -1,0 +1,182 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: IMG A11Y\n"
+"POT-Creation-Date: 2025-02-03 20:17-0500\n"
+"PO-Revision-Date: 2025-02-03 20:18-0500\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: fr_FR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.5\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-Flags-xgettext: --add-comments=translators:\n"
+"X-Poedit-WPHeader: img-a11y.php\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;"
+"esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;"
+"_n_noop:1,2;_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPathExcluded-0: *.min.js\n"
+"X-Poedit-SearchPathExcluded-1: plugin-update-checker/vendor\n"
+"X-Poedit-SearchPathExcluded-2: vendor\n"
+
+#: classes/Img_A11y_List_Table.php:10
+msgid "Image"
+msgstr "Image"
+
+#: classes/Img_A11y_List_Table.php:11
+msgid "Images"
+msgstr "Images"
+
+#: classes/Img_A11y_List_Table.php:18
+msgid "Thumbnail"
+msgstr "Miniature"
+
+#: classes/Img_A11y_List_Table.php:19
+msgid "ID"
+msgstr "ID"
+
+#: classes/Img_A11y_List_Table.php:20
+msgid "Alt Text"
+msgstr "Texte alternatif"
+
+#: classes/Img_A11y_List_Table.php:142
+msgid "Enter Alt Text"
+msgstr "Saisir le texte Alt"
+
+#: classes/Img_A11y_List_Table.php:145
+msgid "N/A"
+msgstr "N/A"
+
+#: img-a11y.php:101
+msgid ""
+"Save failed: Please ensure all images in the content have alt tags for "
+"accessibility."
+msgstr ""
+"L'enregistrement a échoué : Veuillez vous assurer que toutes les images du "
+"contenu ont des balises alt pour l'accessibilité."
+
+#: img-a11y.php:146
+msgid ""
+"Save failed: Please ensure all images in the post content have alt tags or "
+"are marked as decorative for accessibility."
+msgstr ""
+"L'enregistrement a échoué : Veuillez vous assurer que toutes les images "
+"dans le contenu du message ont des balises alt ou sont marquées comme "
+"décoratives pour l'accessibilité."
+
+#: img-a11y.php:163 img-a11y.php:266
+msgid "Mark as Decorative"
+msgstr "Marquer comme décoratif"
+
+#: img-a11y.php:166 img-a11y.php:267
+msgid "Check if this image is decorative and does not require alt text."
+msgstr ""
+"Vérifier si cette image est décorative et ne nécessite pas de texte alt."
+
+#: img-a11y.php:236
+msgid ""
+"Save failed: Please provide an Alt tag for accessibility or mark the image "
+"as decorative."
+msgstr ""
+"L'enregistrement a échoué : Veuillez fournir une balise Alt pour "
+"l'accessibilité ou marquer l'image comme décorative."
+
+#. Plugin Name of the plugin/theme
+#: img-a11y.php:294 img-a11y.php:295
+msgid "IMG A11Y"
+msgstr "IMG A11Y"
+
+#: img-a11y.php:406
+msgid "Images Accessibility Overview"
+msgstr "Aperçu de l'accessibilité des images"
+
+#: img-a11y.php:408
+msgid "Support"
+msgstr "Support"
+
+#: img-a11y.php:411
+msgid "Documentation"
+msgstr "Documentation"
+
+#: img-a11y.php:419
+msgid "Decorative Images"
+msgstr "Images décoratives"
+
+#: img-a11y.php:425
+msgid "Non-Decorative Images Without Alt Text"
+msgstr "Images non-décoratives sans texte Alt"
+
+#: img-a11y.php:431
+msgid "Non-Decorative Images With Alt Text"
+msgstr "Images non-décoratives avec texte Alt"
+
+#: img-a11y.php:483
+msgid "You do not have permission to edit this image."
+msgstr "Vous n'avez pas l'autorisation de modifier cette image."
+
+#: img-a11y.php:490
+msgid "Alt text updated successfully."
+msgstr "Le texte Alt a été mis à jour avec succès."
+
+#: plugin-update-checker/Puc/v5p5/Plugin/Ui.php:56
+msgid "View details"
+msgstr "Voir les détails"
+
+#: plugin-update-checker/Puc/v5p5/Plugin/Ui.php:79
+#, php-format
+msgid "More information about %s"
+msgstr "Plus d’informations sur %s"
+
+#: plugin-update-checker/Puc/v5p5/Plugin/Ui.php:130
+msgid "Check for updates"
+msgstr "Vérifier les mises à jour"
+
+#: plugin-update-checker/Puc/v5p5/Plugin/Ui.php:217
+#, php-format
+msgctxt "the plugin title"
+msgid "The %s plugin is up to date."
+msgstr "Le plugin %s est à jour."
+
+#: plugin-update-checker/Puc/v5p5/Plugin/Ui.php:219
+#, php-format
+msgctxt "the plugin title"
+msgid "A new version of the %s plugin is available."
+msgstr "Une nouvelle version de l'extension %s est disponible."
+
+#: plugin-update-checker/Puc/v5p5/Plugin/Ui.php:221
+#, php-format
+msgctxt "the plugin title"
+msgid "Could not determine if updates are available for %s."
+msgstr ""
+"Impossible de déterminer si des mises à jour sont disponibles pour %s."
+
+#: plugin-update-checker/Puc/v5p5/Plugin/Ui.php:227
+#, php-format
+msgid "Unknown update checker status \"%s\""
+msgstr "Mise à jour inconnue statut \"%s\""
+
+#: plugin-update-checker/Puc/v5p5/Vcs/PluginUpdateChecker.php:113
+msgid "There is no changelog available."
+msgstr "Aucun registre de modifications disponible."
+
+#. Description of the plugin/theme
+msgid ""
+"Adds fields for decorative image marking, long descriptions, and "
+"accessibility prompts to the WordPress media editor. Validates on post save "
+"to ensure all images meet accessibility requirements."
+msgstr ""
+"Ajoute des champs pour le marquage des images décoratives, les descriptions "
+"longues et les invites d'accessibilité à l'éditeur de médias de WordPress. "
+"Validation lors de l'enregistrement de l'article pour s'assurer que toutes "
+"les images répondent aux exigences d'accessibilité."
+
+#. Author of the plugin/theme
+msgid "Robert DeVore"
+msgstr "Robert DeVore"
+
+#. Author URI of the plugin/theme
+msgid "https://robertdevore.com/"
+msgstr "https://robertdevore.com/"
