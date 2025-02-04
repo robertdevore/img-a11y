@@ -1,4 +1,4 @@
-# img-a11y
+# IMG A11Y
 
 IMG A11Y is a free WordPress® plugin that enhances image accessibility by adding fields for decorative image marking and accessibility prompts to the WordPress® media editor. 
 
