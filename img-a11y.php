@@ -139,14 +139,23 @@ function img_a11y_has_images_without_alt( $content ) {
     return false;
 }
 
-// Display admin notice if save is blocked due to missing alt tags (Classic Editor).
-add_action( 'admin_notices', function() {
+/**
+ * Display an admin notice if post saving was blocked due to missing image alt tags.
+ *
+ * This notice is shown when the `img_a11y_error` query parameter is set to `missing_alt`,
+ * typically redirected after a failed save attempt. It encourages users to ensure all
+ * images include alt tags or are marked as decorative for accessibility compliance.
+ *
+ * @since 1.0.0
+ */
+function img_a11y_show_missing_alt_notice() {
     if ( isset( $_GET['img_a11y_error'] ) && $_GET['img_a11y_error'] === 'missing_alt' ) {
         echo '<div class="notice notice-error"><p>';
         esc_html_e( 'Save failed: Please ensure all images in the post content have alt tags or are marked as decorative for accessibility.', 'img-a11y' );
         echo '</p></div>';
     }
-});
+}
+add_action( 'admin_notices', 'img_a11y_show_missing_alt_notice' );
 
 /**
  * Add "Decorative" checkbox to the Edit Media screen.
