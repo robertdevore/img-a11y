@@ -158,6 +158,10 @@ add_action( 'admin_notices', function() {
  * @return array Modified attachment fields.
  */
 function img_a11y_add_decorative_field_to_media( $form_fields, $post ) {
+    if ( ! img_a11y_is_image( $post ) ) {
+        return $form_fields;
+    }
+
     $decorative = get_post_meta( $post->ID, '_is_decorative', true );
     $form_fields['is_decorative'] = [
         'label' => esc_html__( 'Mark as Decorative', 'img-a11y' ),
@@ -180,6 +184,10 @@ add_filter( 'attachment_fields_to_edit', 'img_a11y_add_decorative_field_to_media
  * @return array The modified attachment data.
  */
 function img_a11y_save_decorative_field_from_media( $post, $attachment ) {
+    if ( ! img_a11y_is_image( $post['ID'] ) ) {
+        return $post;
+    }
+
     if ( isset( $attachment['is_decorative'] ) ) {
         update_post_meta( $post['ID'], '_is_decorative', 1 );
     } else {
@@ -490,3 +498,19 @@ function img_a11y_update_alt_text() {
     wp_send_json_success( [ 'message' => __( 'Alt text updated successfully.', 'img-a11y' ) ] );
 }
 add_action( 'wp_ajax_img_a11y_update_alt_text', 'img_a11y_update_alt_text' );
+
+/**
+ * Helper: return true only for image attachments.
+ *
+ * @param int|WP_Post $attachment Attachment ID or object.
+ *
+ * @since  1.1.0
+ * @return bool
+ */
+function img_a11y_is_image( $attachment ) {
+    $mime = is_object( $attachment )
+        ? $attachment->post_mime_type
+        : get_post_mime_type( $attachment );
+
+    return 0 === strpos( $mime, 'image/' );
+}
