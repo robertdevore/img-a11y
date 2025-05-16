@@ -65,23 +65,27 @@ require_once IMG_A11Y_PLUGIN_DIR . 'classes/Img_A11y_List_Table.php';
  * @return void
  */
 function img_a11y_block_save_if_missing_alt_classic( $post_id ) {
-    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
-    if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) return;
-    if ( ! current_user_can( 'edit_post', $post_id ) ) return;
+	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) { return; }
+	if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) { return; }
+	if ( ! current_user_can( 'edit_post', $post_id ) ) { return; }
 
-    $content = get_post_field( 'post_content', $post_id );
+	$content = get_post_field( 'post_content', $post_id );
 
-    if ( img_a11y_has_images_without_alt( $content ) ) {
-        add_filter( 'redirect_post_location', function( $location ) {
-            return add_query_arg( 'img_a11y_error', 'missing_alt', $location );
-        } );
+	$missing_in_html      = img_a11y_has_images_without_alt( $content );
+	$missing_in_elementor = img_a11y_has_elementor_images_without_alt( $post_id );
 
-        remove_action( 'save_post', 'img_a11y_block_save_if_missing_alt_classic' );
-        wp_update_post( [
-            'ID'          => $post_id,
-            'post_status' => 'draft'
-        ] );
-    }
+	if ( $missing_in_html || $missing_in_elementor ) {
+		add_filter( 'redirect_post_location', function ( $location ) {
+			return add_query_arg( 'img_a11y_error', 'missing_alt', $location );
+		} );
+
+		// Force draft so it can't be published.
+		remove_action( 'save_post', 'img_a11y_block_save_if_missing_alt_classic' );
+		wp_update_post( [
+			'ID'          => $post_id,
+			'post_status' => 'draft',
+		] );
+	}
 }
 add_action( 'save_post', 'img_a11y_block_save_if_missing_alt_classic', 10 );
 
@@ -95,15 +99,34 @@ add_action( 'save_post', 'img_a11y_block_save_if_missing_alt_classic', 10 );
  * @return WP_Error|WP_Post The post data or a WP_Error on failure.
  */
 function img_a11y_block_save_if_missing_alt_gutenberg( $prepared_post, $request ) {
-    if ( isset( $prepared_post->post_content ) && img_a11y_has_images_without_alt( $prepared_post->post_content ) ) {
-        return new WP_Error(
-            'missing_alt_tags',
-            esc_html__( 'Save failed: Please ensure all images in the content have alt tags for accessibility.', 'img-a11y' ),
-            [ 'status' => 400 ]
-        );
-    }
 
-    return $prepared_post;
+	// Scan the normal post_content HTML (same as before).
+	$missing_in_html = isset( $prepared_post->post_content )
+		&& img_a11y_has_images_without_alt( $prepared_post->post_content );
+
+	// Scan Elementor data, if it's part of this REST request.
+	$missing_in_elementor = false;
+
+	if ( $request->has_param( '_elementor_data' ) ) {
+		$data = json_decode( wp_unslash( $request->get_param( '_elementor_data' ) ), true );
+		if ( is_array( $data ) && img_a11y_elementor_nodes_have_missing_alt( $data ) ) {
+			$missing_in_elementor = true;
+		}
+	}
+	// ...or, if we're updating an existing post, fall back to meta on disk.
+	elseif ( ! empty( $prepared_post->ID ) ) {
+		$missing_in_elementor = img_a11y_has_elementor_images_without_alt( $prepared_post->ID );
+	}
+
+	if ( $missing_in_html || $missing_in_elementor ) {
+		return new WP_Error(
+			'missing_alt_tags',
+			esc_html__( 'Save failed: Please ensure every image—including Elementor widgets—has alt text or is marked decorative.', 'img-a11y' ),
+			[ 'status' => 400 ]
+		);
+	}
+
+	return $prepared_post;
 }
 add_filter( 'rest_pre_insert_post', 'img_a11y_block_save_if_missing_alt_gutenberg', 10, 2 );
 
@@ -522,4 +545,70 @@ function img_a11y_is_image( $attachment ) {
         : get_post_mime_type( $attachment );
 
     return 0 === strpos( $mime, 'image/' );
+}
+
+/**
+ * Does a given Elementor element-tree contain any <Image> widget
+ * whose attachment lacks alt text and is not marked decorative?
+ *
+ * @param array $nodes Elementor data array.
+ * 
+ * @since  1.1.0
+ * @return bool
+ */
+function img_a11y_elementor_nodes_have_missing_alt( array $nodes ) : bool {
+	foreach ( $nodes as $node ) {
+
+		// Recurse into nested elements first.
+		if ( ! empty( $node['elements'] ) && is_array( $node['elements'] ) ) {
+			if ( img_a11y_elementor_nodes_have_missing_alt( $node['elements'] ) ) {
+				return true;
+			}
+		}
+
+		// Only inspect Image widgets.
+		if ( isset( $node['elType'], $node['widgetType'] )
+		     && 'widget' === $node['elType']
+		     && 'image'  === $node['widgetType'] ) {
+
+			$attachment_id = $node['settings']['image']['id'] ?? 0;
+
+			if ( $attachment_id ) {
+				$is_decorative = get_post_meta( $attachment_id, '_is_decorative', true );
+				$alt           = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
+
+				if ( ! $is_decorative && '' === trim( $alt ) ) {
+					return true; // Stop scanning – we found a violation.
+				}
+			}
+		}
+	}
+	return false;
+}
+
+/**
+ * Convenience wrapper: fetch & parse the post's `_elementor_data`
+ * meta (JSON or serialized) and run the scan.
+ *
+ * @param int $post_id
+ * 
+ * @since  1.1.0
+ * @return bool
+ */
+function img_a11y_has_elementor_images_without_alt( int $post_id ) : bool {
+	$raw = get_post_meta( $post_id, '_elementor_data', true );
+	if ( empty( $raw ) ) {
+		return false; // Post isn't built with Elementor.
+	}
+
+	$raw  = is_string( $raw ) ? wp_unslash( $raw ) : $raw;
+	$data = json_decode( $raw, true );
+	if ( null === $data ) {
+		$data = maybe_unserialize( $raw );
+	}
+	if ( ! is_array( $data ) ) {
+		return false; // Can't parse unexpected format.
+	}
+
+	return img_a11y_elementor_nodes_have_missing_alt( $data );
 }
