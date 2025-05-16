@@ -2,7 +2,7 @@
 /**
  * Plugin Name: IMG A11Y
  * Description: Adds fields for decorative image marking, long descriptions, and accessibility prompts to the WordPress media editor. Validates on post save to ensure all images meet accessibility requirements.
- * Version: 1.0.1
+ * Version: 1.1.0
  * Author: Robert DeVore
  * Author URI: https://robertdevore.com/
  * License: GPL-2.0+
@@ -29,7 +29,7 @@ $myUpdateChecker->setBranch( 'main' );
 
 // Define the plugin constants.
 define( 'IMG_A11Y_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'IMG_A11Y_VERSION', '1.0.1' );
+define( 'IMG_A11Y_VERSION', '1.1.0' );
 
 // Check if Composer's autoloader is already registered globally.
 if ( ! class_exists( 'RobertDevore\WPComCheck\WPComPluginHandler' ) ) {
